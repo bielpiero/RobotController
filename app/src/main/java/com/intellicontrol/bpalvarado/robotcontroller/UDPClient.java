@@ -44,6 +44,10 @@ public class UDPClient extends AsyncTask<Void, Void, Void> implements UDPClientI
         this.target = target;
     }
 
+    int getPort(){
+        return socket_conn.getLocalPort();
+    }
+
     int sendData(byte[] data){
         try {
             DatagramPacket sendPacket = new DatagramPacket(data, data.length, remoteAddress);
@@ -57,20 +61,22 @@ public class UDPClient extends AsyncTask<Void, Void, Void> implements UDPClientI
         DatagramPacket receiveData = new DatagramPacket(bufferIn, BUFFER_SIZE);
         try {
             socket_conn.receive(receiveData);
+            bufferIn = new byte[receiveData.getLength()];
+            System.arraycopy(receiveData.getData(),0, bufferIn, 0, receiveData.getLength());
         } catch(Exception receiveEx) {}
         return 0;
     }
 
     public void startConnection(){
         this.threadStatus = THREAD_ALIVE;
-        this.execute();
+        this.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     @Override
     protected Void doInBackground(Void... params) {
         while(threadStatus == THREAD_ALIVE){
             if(receiveData() == 0) {
-                onMessageReceived(bufferIn);
+                onUDPMessageReceived(bufferIn);
             }
             try {
                 Thread.sleep(100);
@@ -81,8 +87,8 @@ public class UDPClient extends AsyncTask<Void, Void, Void> implements UDPClientI
     }
 
     @Override
-    public void onMessageReceived(byte[] data) {
-        target.onMessageReceived(data);
+    public void onUDPMessageReceived(byte[] data) {
+        target.onUDPMessageReceived(data);
     }
 
     public void closeConnection() throws InterruptedException{

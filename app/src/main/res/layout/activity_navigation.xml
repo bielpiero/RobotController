@@ -4,14 +4,6 @@
     android:layout_width="match_parent" android:layout_height="match_parent"
     android:visibility="visible">
 
-    <org.opencv.android.JavaCameraView
-        android:id="@+id/helloOpenCvView"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        android:visibility="gone"
-        opencv:show_fps="true"
-        opencv:camera_id="any"/>
-
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -20,5 +12,26 @@
         android:id="@+id/textViewNav"
         android:textSize="30sp"
         android:textStyle="bold"/>
+
+    <ImageButton
+        android:layout_width="55sp"
+        android:layout_height="55sp"
+        android:id="@+id/imageButtonCamera"
+        android:background="@drawable/camera"
+        android:visibility="visible"
+        android:onClick="buttonCamera_clicked"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true" />
+
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/imageViewStream"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentBottom="true"
+        android:layout_below="@+id/imageButtonCamera" />
 
 </RelativeLayout>

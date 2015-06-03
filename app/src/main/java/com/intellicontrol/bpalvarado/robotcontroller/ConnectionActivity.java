@@ -1,6 +1,8 @@
 package com.intellicontrol.bpalvarado.robotcontroller;
 
 import android.app.Activity;
+import android.app.Application;
+import android.graphics.Bitmap;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -26,6 +28,8 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
@@ -36,7 +40,11 @@ import android.widget.Toast;
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.LoaderCallbackInterface;
+import org.opencv.android.Utils;
+import org.opencv.core.Core;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfByte;
+import org.opencv.highgui.Highgui;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -45,7 +53,7 @@ import java.util.List;
 
 
 public class ConnectionActivity extends ActionBarActivity
-        implements NavigationDrawerFragment.NavigationDrawerCallbacks, SensorEventListener, SocketNodeInterface, CameraBridgeViewBase.CvCameraViewListener {
+        implements NavigationDrawerFragment.NavigationDrawerCallbacks, SensorEventListener, SocketNodeInterface, UDPClientInterface {
 
     /**
      * Fragment managing the behaviors, interactions and presentation of the navigation drawer.
@@ -57,11 +65,15 @@ public class ConnectionActivity extends ActionBarActivity
      */
     private CharSequence mTitle;
     private SocketNode connection;
+    private UDPClient udpConnection;
     private ViewGroup currentFrame;
     private ArrayList<Gesture> gestures;
 
     private SensorManager sensorManager;
     private Sensor sensor;
+
+    private ImageButton activateDeactivateCamera;
+    private ImageView imageViewStream;
 
     private Button lockVelocities;
 
@@ -69,8 +81,6 @@ public class ConnectionActivity extends ActionBarActivity
     private Button buttonBackward;
     private Button buttonLeft;
     private Button buttonRight;
-
-    private float accelerometerZOffset;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -95,13 +105,38 @@ public class ConnectionActivity extends ActionBarActivity
         }
         connection.sendMsg((byte)0x00, "");
         currentFrame = (LinearLayout)findViewById(R.id.expressions_frame);
+        imageViewStream = (ImageView)findViewById(R.id.imageViewStream);
         gestures = new ArrayList<Gesture>();
         sensorManager = (SensorManager) this.getSystemService(Context.SENSOR_SERVICE);
         sensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         sensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL);
+        udpConnection = null;
 
-        accelerometerZOffset = 7;
-
+        final ConnectionActivity self = this;
+        activateDeactivateCamera = (ImageButton)findViewById(R.id.imageButtonCamera);
+        activateDeactivateCamera.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if(event.getAction() == MotionEvent.ACTION_UP) {
+                    if (udpConnection == null) {
+                        int port = 0;
+                        udpConnection = new UDPClient("", port, self);
+                        port = udpConnection.getPort();
+                        udpConnection.startConnection();
+                        connection.sendMsg((byte) 0x21, "1:" + port);
+                    } else {
+                        connection.sendMsg((byte) 0x22, "");
+                        try {
+                            udpConnection.closeConnection();
+                        } catch (InterruptedException e) {
+                        }
+                        udpConnection = null;
+                    }
+                }
+                return true;
+            }
+        });
+        System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
         /*buttonForward = (Button)findViewById(R.id.buttonForward);
         buttonBackward = (Button)findViewById(R.id.buttonBackwards);
         buttonLeft = (Button)findViewById(R.id.buttonLeft);
@@ -332,18 +367,14 @@ public class ConnectionActivity extends ActionBarActivity
     }
 
     @Override
-    public void onCameraViewStarted(int width, int height) {
+    public void onUDPMessageReceived(byte[] data) {
+        Mat dataToMat = new Mat();
+        dataToMat.put(0, 0, data);
+        Mat dataDecoded = Highgui.imdecode(dataToMat, Highgui.CV_LOAD_IMAGE_COLOR);
+        Bitmap bitmapImage = Bitmap.createBitmap(dataDecoded.cols(), dataDecoded. rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(dataDecoded, bitmapImage);
 
-    }
-
-    @Override
-    public void onCameraViewStopped() {
-
-    }
-
-    @Override
-    public Mat onCameraFrame(Mat inputFrame) {
-        return null;
+        imageViewStream.setImageBitmap(bitmapImage);
     }
 
     /**
