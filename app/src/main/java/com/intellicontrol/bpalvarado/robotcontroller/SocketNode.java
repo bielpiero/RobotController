@@ -213,7 +213,6 @@ public class SocketNode extends AsyncTask<Void, Void, Void> implements SocketNod
 
     @Override
     protected Void doInBackground(Void... params) {
-        //SocketNode self = params[0];
         while(threadStatus == THREAD_ALIVE){
             if(!isConnected()){
                 try {

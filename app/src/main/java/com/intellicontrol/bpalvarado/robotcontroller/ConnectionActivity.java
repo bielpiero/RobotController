@@ -26,10 +26,17 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.RelativeLayout;
 import android.widget.TableLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import org.opencv.android.BaseLoaderCallback;
+import org.opencv.android.CameraBridgeViewBase;
+import org.opencv.android.LoaderCallbackInterface;
+import org.opencv.core.Mat;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -38,7 +45,7 @@ import java.util.List;
 
 
 public class ConnectionActivity extends ActionBarActivity
-        implements NavigationDrawerFragment.NavigationDrawerCallbacks, SensorEventListener, SocketNodeInterface {
+        implements NavigationDrawerFragment.NavigationDrawerCallbacks, SensorEventListener, SocketNodeInterface, CameraBridgeViewBase.CvCameraViewListener {
 
     /**
      * Fragment managing the behaviors, interactions and presentation of the navigation drawer.
@@ -50,11 +57,12 @@ public class ConnectionActivity extends ActionBarActivity
      */
     private CharSequence mTitle;
     private SocketNode connection;
-    private TableLayout currentFrame;
+    private ViewGroup currentFrame;
     private ArrayList<Gesture> gestures;
 
     private SensorManager sensorManager;
     private Sensor sensor;
+
     private Button lockVelocities;
 
     private Button buttonForward;
@@ -86,7 +94,7 @@ public class ConnectionActivity extends ActionBarActivity
             e.printStackTrace();
         }
         connection.sendMsg((byte)0x00, "");
-        currentFrame = (TableLayout)findViewById(R.id.expressions_frame);
+        currentFrame = (LinearLayout)findViewById(R.id.expressions_frame);
         gestures = new ArrayList<Gesture>();
         sensorManager = (SensorManager) this.getSystemService(Context.SENSOR_SERVICE);
         sensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
@@ -94,8 +102,7 @@ public class ConnectionActivity extends ActionBarActivity
 
         accelerometerZOffset = 7;
 
-
-        buttonForward = (Button)findViewById(R.id.buttonForward);
+        /*buttonForward = (Button)findViewById(R.id.buttonForward);
         buttonBackward = (Button)findViewById(R.id.buttonBackwards);
         buttonLeft = (Button)findViewById(R.id.buttonLeft);
         buttonRight = (Button)findViewById(R.id.buttonRight);
@@ -184,7 +191,7 @@ public class ConnectionActivity extends ActionBarActivity
                 }
                 return true;
             }
-        });
+        });*/
     }
 
     @Override
@@ -202,17 +209,17 @@ public class ConnectionActivity extends ActionBarActivity
         switch (number) {
             case 1:
                 mTitle = getString(R.string.title_section_expressions);
-                currentFrame = (TableLayout)findViewById(R.id.expressions_frame);
+                currentFrame = (LinearLayout)findViewById(R.id.expressions_frame);
                 currentFrame.setVisibility(View.VISIBLE);
                 break;
             case 2:
                 mTitle = getString(R.string.title_section_navigation);
-                currentFrame = (TableLayout)findViewById(R.id.navigation_frame);
+                currentFrame = (RelativeLayout)findViewById(R.id.navigation_frame);
                 currentFrame.setVisibility(View.VISIBLE);
                 break;
             case 3:
                 mTitle = getString(R.string.title_section_emotions);
-                currentFrame = (TableLayout)findViewById(R.id.emotions_frame);
+                currentFrame = (LinearLayout)findViewById(R.id.emotions_frame);
                 currentFrame.setVisibility(View.VISIBLE);
                 break;
         }
@@ -322,6 +329,21 @@ public class ConnectionActivity extends ActionBarActivity
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
 
+    }
+
+    @Override
+    public void onCameraViewStarted(int width, int height) {
+
+    }
+
+    @Override
+    public void onCameraViewStopped() {
+
+    }
+
+    @Override
+    public Mat onCameraFrame(Mat inputFrame) {
+        return null;
     }
 
     /**
