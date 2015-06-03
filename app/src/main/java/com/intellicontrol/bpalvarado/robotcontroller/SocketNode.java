@@ -28,7 +28,15 @@ public class SocketNode extends AsyncTask<Void, Void, Void> implements SocketNod
     private SocketAddress remoteAddress;
     private int type;
 
-    SocketNode(String address, int port) {
+    private byte[] bufferIn;
+    private int bufferLength;
+
+    private byte finalOpr;
+    private String finalData;
+
+    private SocketNodeInterface target;
+
+    SocketNode(String address, int port, SocketNodeInterface target) {
         threadStatus = THREAD_STOPPED;
         this.type = SOCKET_CLIENT;
         if(address.isEmpty()){
@@ -44,7 +52,7 @@ public class SocketNode extends AsyncTask<Void, Void, Void> implements SocketNod
             remoteAddress = new InetSocketAddress(address, port);
             this.socket_conn = new Socket();
         }
-
+        this.target = target;
     }
 
     public boolean isConnected(){
@@ -57,7 +65,7 @@ public class SocketNode extends AsyncTask<Void, Void, Void> implements SocketNod
         return connStatus;
     }
 
-    public int sendMsg(char opr, String data){
+    public int sendMsg(byte opr, String data){
         int ret = 0;
         if(isConnected()){
             byte[] dataInBytes = data.getBytes(Charset.forName("UTF-8"));
@@ -93,15 +101,49 @@ public class SocketNode extends AsyncTask<Void, Void, Void> implements SocketNod
         return 0;
     }
 
-    public int receiveMsg(char opr, String data, int length){
-
-        return 0;
+    public int receiveMsg(){
+        int ret = 0;
+        int headerSize = 5;
+        byte[] header = new byte[headerSize];
+        int dataLength;
+        if(isConnected()){
+            if(receiveBytes(headerSize) == 0){
+                header = bufferIn;
+                if (header[3] != 0){
+                    dataLength = header[2] + (header[3] + header[4] * 256) * 256;
+                } else {
+                    dataLength = header[2] + header[4] * 256;
+                }
+                if (header[0] != 57 || header[1] != 48 || dataLength <= 0){
+                    ret = -3;
+                } else {
+                    receiveBytes(dataLength);
+                    this.finalOpr = bufferIn[0];
+                    byte[] auxBufferIn = new byte[bufferIn.length - 1];
+                    System.arraycopy(bufferIn, 1, auxBufferIn, 0, auxBufferIn.length);
+                    try {
+                        this.finalData = new String(auxBufferIn, "UTF-8");
+                    } catch (UnsupportedEncodingException encEx){ ret = -4; }
+                }
+            } else { ret = -2; }
+        } else { ret = -1; }
+        return ret;
     }
 
-    public int receiveBytes(String data, int length) throws IOException {
+    public int receiveBytes(int length) {
+        int ret = 0;
+        if(isConnected()){
+            byte[] dataInBytes = new byte[length];
+            try {
+                in.read(dataInBytes, 0, dataInBytes.length);
+                this.bufferIn = dataInBytes;
+                this.bufferLength = dataInBytes.length;
+            } catch (IOException e) {
+                ret = -2;
+            }
+        } else { ret = -1; }
 
-
-        return 0;
+        return ret;
     }
 
     private void handleConnection() throws InterruptedException, IOException {
@@ -112,6 +154,7 @@ public class SocketNode extends AsyncTask<Void, Void, Void> implements SocketNod
                     socket_conn.setReuseAddress(true);
                     socket_conn.setReceiveBufferSize(BUFFER_SIZE);
                     socket_conn.setSendBufferSize(BUFFER_SIZE);
+                    socket_conn.setSoTimeout(0);
 
                     in = socket_conn.getInputStream();
                     out = socket_conn.getOutputStream();
@@ -126,6 +169,7 @@ public class SocketNode extends AsyncTask<Void, Void, Void> implements SocketNod
                 socket_conn.setReuseAddress(true);
                 socket_conn.setReceiveBufferSize(BUFFER_SIZE);
                 socket_conn.setSendBufferSize(BUFFER_SIZE);
+                socket_conn.setSoTimeout(0);
 
                 in = socket_conn.getInputStream();
                 out = socket_conn.getOutputStream();
@@ -137,13 +181,13 @@ public class SocketNode extends AsyncTask<Void, Void, Void> implements SocketNod
     }
 
     @Override
-    public void onMessageReceived(char opr, String data) {
-
+    public void onMessageReceived(byte opr, String data) {
+        target.onMessageReceived(opr, data);
     }
 
     @Override
     public void onConnection(){
-
+        target.onConnection();
     }
 
     public void startConnection(){
@@ -155,7 +199,7 @@ public class SocketNode extends AsyncTask<Void, Void, Void> implements SocketNod
         if(threadStatus == THREAD_ALIVE){
             threadStatus = THREAD_STOPPING;
             while(threadStatus != THREAD_STOPPED) {
-                wait(100);
+                Thread.sleep(100);
             }
         }
         if(socket_conn != null) {
@@ -180,12 +224,13 @@ public class SocketNode extends AsyncTask<Void, Void, Void> implements SocketNod
 
                 }
             } else {
-                char opr = 0;
-                String data = "";
-                if(receiveMsg(opr, data, BUFFER_SIZE) == 0) {
-                    onMessageReceived(opr, data);
+                if(receiveMsg() == 0) {
+                    onMessageReceived(finalOpr, finalData);
                 }
             }
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) { }
         }
         threadStatus = THREAD_STOPPED;
         return null;

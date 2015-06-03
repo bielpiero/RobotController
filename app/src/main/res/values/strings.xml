@@ -4,6 +4,8 @@
     <string name="title_section_navigation">Navigation</string>
     <string name="title_section_emotions">Emotions</string>
     <string name="title_section_expressions">Expressions</string>
+    <string name="button_lock_velocities">Lock Velocities</string>
+    <string name="button_unlock_velocities">Unlock Velocities</string>
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>

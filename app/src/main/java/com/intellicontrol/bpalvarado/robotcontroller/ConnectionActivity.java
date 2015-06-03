@@ -1,6 +1,11 @@
 package com.intellicontrol.bpalvarado.robotcontroller;
 
 import android.app.Activity;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+import android.os.DropBoxManager;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.ActionBar;
 import android.support.v4.app.Fragment;
@@ -12,17 +17,28 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.support.v4.widget.DrawerLayout;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.ListView;
+import android.widget.TableLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 
 public class ConnectionActivity extends ActionBarActivity
-        implements NavigationDrawerFragment.NavigationDrawerCallbacks {
+        implements NavigationDrawerFragment.NavigationDrawerCallbacks, SensorEventListener, SocketNodeInterface {
 
     /**
      * Fragment managing the behaviors, interactions and presentation of the navigation drawer.
@@ -33,6 +49,20 @@ public class ConnectionActivity extends ActionBarActivity
      * Used to store the last screen title. For use in {@link #restoreActionBar()}.
      */
     private CharSequence mTitle;
+    private SocketNode connection;
+    private TableLayout currentFrame;
+    private ArrayList<Gesture> gestures;
+
+    private SensorManager sensorManager;
+    private Sensor sensor;
+    private Button lockVelocities;
+
+    private Button buttonForward;
+    private Button buttonBackward;
+    private Button buttonLeft;
+    private Button buttonRight;
+
+    private float accelerometerZOffset;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,6 +77,114 @@ public class ConnectionActivity extends ActionBarActivity
         mNavigationDrawerFragment.setUp(
                 R.id.navigation_drawer,
                 (DrawerLayout) findViewById(R.id.drawer_layout));
+
+        connection = new SocketNode("192.168.1.101", 14004, this);
+        connection.startConnection();
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        connection.sendMsg((byte)0x00, "");
+        currentFrame = (TableLayout)findViewById(R.id.expressions_frame);
+        gestures = new ArrayList<Gesture>();
+        sensorManager = (SensorManager) this.getSystemService(Context.SENSOR_SERVICE);
+        sensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        sensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL);
+
+        accelerometerZOffset = 7;
+
+
+        buttonForward = (Button)findViewById(R.id.buttonForward);
+        buttonBackward = (Button)findViewById(R.id.buttonBackwards);
+        buttonLeft = (Button)findViewById(R.id.buttonLeft);
+        buttonRight = (Button)findViewById(R.id.buttonRight);
+        lockVelocities = (Button)findViewById(R.id.buttonVelocity);
+        lockVelocities.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                EditText linVelocity = (EditText) findViewById(R.id.editTextLinearVelocity);
+                EditText angVelocity = (EditText) findViewById(R.id.editTextAngularVelocity);
+                if (lockVelocities.getText().equals(getString(R.string.button_lock_velocities))) {
+
+                    lockVelocities.setText(getString(R.string.button_unlock_velocities));
+                    linVelocity.setEnabled(false);
+                    angVelocity.setEnabled(false);
+
+                    buttonBackward.setEnabled(true);
+                    buttonForward.setEnabled(true);
+                    buttonLeft.setEnabled(true);
+                    buttonRight.setEnabled(true);
+
+                } else if (lockVelocities.getText().equals(getString(R.string.button_unlock_velocities))) {
+
+                    lockVelocities.setText(getString(R.string.button_lock_velocities));
+                    linVelocity.setEnabled(true);
+                    angVelocity.setEnabled(true);
+
+                    buttonBackward.setEnabled(false);
+                    buttonForward.setEnabled(false);
+                    buttonLeft.setEnabled(false);
+                    buttonRight.setEnabled(false);
+                }
+            }
+        });
+
+
+        buttonForward.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                EditText linVelocity = (EditText)findViewById(R.id.editTextLinearVelocity);
+                if(event.getAction() == MotionEvent.ACTION_DOWN){
+                    connection.sendMsg((byte)0x10, linVelocity.getText().toString() + ",0");
+                } else if(event.getAction() == MotionEvent.ACTION_UP){
+                    connection.sendMsg((byte)0x10, "0,0");
+                }
+                return true;
+            }
+        });
+
+
+        buttonBackward.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                EditText linVelocity = (EditText)findViewById(R.id.editTextLinearVelocity);
+                if(event.getAction() == MotionEvent.ACTION_DOWN){
+                    connection.sendMsg((byte)0x10, "-" + linVelocity.getText().toString() + ",0");
+                } else if(event.getAction() == MotionEvent.ACTION_UP){
+                    connection.sendMsg((byte)0x10, "0,0");
+                }
+                return true;
+            }
+        });
+
+
+        buttonLeft.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                EditText angVelocity = (EditText)findViewById(R.id.editTextAngularVelocity);
+                if(event.getAction() == MotionEvent.ACTION_DOWN){
+                    connection.sendMsg((byte)0x10, "0," + angVelocity.getText().toString());
+                } else if(event.getAction() == MotionEvent.ACTION_UP){
+                    connection.sendMsg((byte)0x10, "0,0");
+                }
+                return true;
+            }
+        });
+
+
+        buttonRight.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                EditText angVelocity = (EditText)findViewById(R.id.editTextAngularVelocity);
+                if(event.getAction() == MotionEvent.ACTION_DOWN){
+                    connection.sendMsg((byte)0x10, "0,-" + angVelocity.getText().toString());
+                } else if(event.getAction() == MotionEvent.ACTION_UP){
+                    connection.sendMsg((byte)0x10, "0,0");
+                }
+                return true;
+            }
+        });
     }
 
     @Override
@@ -59,23 +197,23 @@ public class ConnectionActivity extends ActionBarActivity
     }
 
     public void onSectionAttached(int number) {
+
+        currentFrame.setVisibility(View.INVISIBLE);
         switch (number) {
             case 1:
-                mTitle = getString(R.string.title_section_navigation);
-                SocketNode conne = new SocketNode("192.168.1.101", 14004);
-                conne.startConnection();
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                conne.sendMsg((char) 0x00, "");
+                mTitle = getString(R.string.title_section_expressions);
+                currentFrame = (TableLayout)findViewById(R.id.expressions_frame);
+                currentFrame.setVisibility(View.VISIBLE);
                 break;
             case 2:
-                mTitle = getString(R.string.title_section_emotions);
+                mTitle = getString(R.string.title_section_navigation);
+                currentFrame = (TableLayout)findViewById(R.id.navigation_frame);
+                currentFrame.setVisibility(View.VISIBLE);
                 break;
             case 3:
-                mTitle = getString(R.string.title_section_expressions);
+                mTitle = getString(R.string.title_section_emotions);
+                currentFrame = (TableLayout)findViewById(R.id.emotions_frame);
+                currentFrame.setVisibility(View.VISIBLE);
                 break;
         }
     }
@@ -114,6 +252,76 @@ public class ConnectionActivity extends ActionBarActivity
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onConnection() {
+
+    }
+
+    @Override
+    public void onMessageReceived(byte opr, String data) {
+        switch (opr){
+            case 0:
+                fillExpressionsList(data);
+                break;
+            case 1:
+                break;
+        }
+    }
+    private void fillExpressionsList(String data){
+        ListView expressionsList = (ListView)findViewById(R.id.listViewExpressions);
+        String[] facesSplited = data.split("\\|");
+        gestures.clear();
+        for(int i = 0; i < facesSplited.length; i++){
+            if(!facesSplited[i].isEmpty()){
+                String[] faceIdName = facesSplited[i].split(",");
+                int gestureId = Integer.parseInt(faceIdName[0]);
+                gestures.add(new Gesture(gestureId, faceIdName[1], null));
+
+            }
+        }
+        ArrayAdapter<Gesture> adapter = new GesturesAdapter(this, gestures);
+        expressionsList.setAdapter(adapter);
+        expressionsList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Gesture selected = gestures.get(position);
+                connection.sendMsg((byte)0x07, Integer.toString(selected.expressionId));
+            }
+        });
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        /*EditText linVelocity = (EditText)findViewById(R.id.editTextLinearVelocity);
+        EditText angVelocity = (EditText)findViewById(R.id.editTextAngularVelocity);
+        if(velocitiesLocked){
+
+            int linVel = 0;
+            int angVel = 0;
+            if(event.values[2]>(accelerometerZOffset + 2.5)) {
+                linVel = Integer.parseInt(linVelocity.getText().toString());
+            } else if(event.values[2] < (accelerometerZOffset - 2.5)){
+                linVel = -Integer.parseInt(linVelocity.getText().toString());
+            }
+
+            if(event.values[1]>1.5) {
+                angVel = Integer.parseInt(angVelocity.getText().toString());
+            } else if(event.values[1] < -1.5){
+                angVel = -Integer.parseInt(angVelocity.getText().toString());
+            }
+            connection.sendMsg((byte)0x10, Integer.toString(linVel) + "," + Integer.toString(angVel));
+        } else {
+            connection.sendMsg((byte)0x10, "0,0");
+        }
+        TextView accValues = (TextView)findViewById(R.id.textViewAccValues);
+        accValues.setText("X: " + event.values[0] + "\nY: " + event.values[1] + "\nZ: " + (event.values[2]));*/
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
     }
 
     /**
