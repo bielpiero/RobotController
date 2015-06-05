@@ -16,7 +16,7 @@ android {
     defaultConfig {
         minSdkVersion 14
         targetSdkVersion 22
-        versionCode 2480
+        versionCode 2490
         versionName "2.4.9"
     }
 

@@ -38,8 +38,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import org.opencv.android.BaseLoaderCallback;
-import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.LoaderCallbackInterface;
+import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
@@ -75,12 +75,34 @@ public class ConnectionActivity extends ActionBarActivity
     private ImageButton activateDeactivateCamera;
     private ImageView imageViewStream;
 
+
     private Button lockVelocities;
 
     private Button buttonForward;
     private Button buttonBackward;
     private Button buttonLeft;
     private Button buttonRight;
+
+    private BaseLoaderCallback  mOpenCVCallBack = new BaseLoaderCallback(this) {
+        @Override
+        public void onManagerConnected(int status) {
+            switch (status) {
+                case LoaderCallbackInterface.SUCCESS:
+                    activateDeactivateCamera = (ImageButton) findViewById(R.id.imageButtonCamera);
+                    activateDeactivateCamera.setEnabled(true);
+
+                break;
+                case LoaderCallbackInterface.INIT_FAILED:
+                    activateDeactivateCamera = (ImageButton) findViewById(R.id.imageButtonCamera);
+                    activateDeactivateCamera.setEnabled(false);
+                    break;
+                default: {
+                    super.onManagerConnected(status);
+                }
+                break;
+            }
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -105,7 +127,7 @@ public class ConnectionActivity extends ActionBarActivity
         }
         connection.sendMsg((byte)0x00, "");
         currentFrame = (LinearLayout)findViewById(R.id.expressions_frame);
-        imageViewStream = (ImageView)findViewById(R.id.imageViewStream);
+
         gestures = new ArrayList<Gesture>();
         sensorManager = (SensorManager) this.getSystemService(Context.SENSOR_SERVICE);
         sensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
@@ -117,7 +139,7 @@ public class ConnectionActivity extends ActionBarActivity
         activateDeactivateCamera.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                if(event.getAction() == MotionEvent.ACTION_UP) {
+                if (event.getAction() == MotionEvent.ACTION_UP) {
                     if (udpConnection == null) {
                         int port = 0;
                         udpConnection = new UDPClient("", port, self);
@@ -136,97 +158,9 @@ public class ConnectionActivity extends ActionBarActivity
                 return true;
             }
         });
-        System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-        /*buttonForward = (Button)findViewById(R.id.buttonForward);
-        buttonBackward = (Button)findViewById(R.id.buttonBackwards);
-        buttonLeft = (Button)findViewById(R.id.buttonLeft);
-        buttonRight = (Button)findViewById(R.id.buttonRight);
-        lockVelocities = (Button)findViewById(R.id.buttonVelocity);
-        lockVelocities.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                EditText linVelocity = (EditText) findViewById(R.id.editTextLinearVelocity);
-                EditText angVelocity = (EditText) findViewById(R.id.editTextAngularVelocity);
-                if (lockVelocities.getText().equals(getString(R.string.button_lock_velocities))) {
+        if(!OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_9, this, mOpenCVCallBack)) {
 
-                    lockVelocities.setText(getString(R.string.button_unlock_velocities));
-                    linVelocity.setEnabled(false);
-                    angVelocity.setEnabled(false);
-
-                    buttonBackward.setEnabled(true);
-                    buttonForward.setEnabled(true);
-                    buttonLeft.setEnabled(true);
-                    buttonRight.setEnabled(true);
-
-                } else if (lockVelocities.getText().equals(getString(R.string.button_unlock_velocities))) {
-
-                    lockVelocities.setText(getString(R.string.button_lock_velocities));
-                    linVelocity.setEnabled(true);
-                    angVelocity.setEnabled(true);
-
-                    buttonBackward.setEnabled(false);
-                    buttonForward.setEnabled(false);
-                    buttonLeft.setEnabled(false);
-                    buttonRight.setEnabled(false);
-                }
-            }
-        });
-
-
-        buttonForward.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                EditText linVelocity = (EditText)findViewById(R.id.editTextLinearVelocity);
-                if(event.getAction() == MotionEvent.ACTION_DOWN){
-                    connection.sendMsg((byte)0x10, linVelocity.getText().toString() + ",0");
-                } else if(event.getAction() == MotionEvent.ACTION_UP){
-                    connection.sendMsg((byte)0x10, "0,0");
-                }
-                return true;
-            }
-        });
-
-
-        buttonBackward.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                EditText linVelocity = (EditText)findViewById(R.id.editTextLinearVelocity);
-                if(event.getAction() == MotionEvent.ACTION_DOWN){
-                    connection.sendMsg((byte)0x10, "-" + linVelocity.getText().toString() + ",0");
-                } else if(event.getAction() == MotionEvent.ACTION_UP){
-                    connection.sendMsg((byte)0x10, "0,0");
-                }
-                return true;
-            }
-        });
-
-
-        buttonLeft.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                EditText angVelocity = (EditText)findViewById(R.id.editTextAngularVelocity);
-                if(event.getAction() == MotionEvent.ACTION_DOWN){
-                    connection.sendMsg((byte)0x10, "0," + angVelocity.getText().toString());
-                } else if(event.getAction() == MotionEvent.ACTION_UP){
-                    connection.sendMsg((byte)0x10, "0,0");
-                }
-                return true;
-            }
-        });
-
-
-        buttonRight.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                EditText angVelocity = (EditText)findViewById(R.id.editTextAngularVelocity);
-                if(event.getAction() == MotionEvent.ACTION_DOWN){
-                    connection.sendMsg((byte)0x10, "0,-" + angVelocity.getText().toString());
-                } else if(event.getAction() == MotionEvent.ACTION_UP){
-                    connection.sendMsg((byte)0x10, "0,0");
-                }
-                return true;
-            }
-        });*/
+        }
     }
 
     @Override
@@ -368,13 +302,17 @@ public class ConnectionActivity extends ActionBarActivity
 
     @Override
     public void onUDPMessageReceived(byte[] data) {
-        Mat dataToMat = new Mat();
-        dataToMat.put(0, 0, data);
+        MatOfByte dataToMat = new MatOfByte(data);
         Mat dataDecoded = Highgui.imdecode(dataToMat, Highgui.CV_LOAD_IMAGE_COLOR);
-        Bitmap bitmapImage = Bitmap.createBitmap(dataDecoded.cols(), dataDecoded. rows(), Bitmap.Config.ARGB_8888);
+        final Bitmap bitmapImage = Bitmap.createBitmap(dataDecoded.cols(), dataDecoded.rows(), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(dataDecoded, bitmapImage);
-
-        imageViewStream.setImageBitmap(bitmapImage);
+        imageViewStream = (ImageView)findViewById(R.id.imageViewStream);
+        imageViewStream.post(new Runnable() {
+            @Override
+            public void run() {
+                imageViewStream.setImageBitmap(bitmapImage);
+            }
+        });
     }
 
     /**
