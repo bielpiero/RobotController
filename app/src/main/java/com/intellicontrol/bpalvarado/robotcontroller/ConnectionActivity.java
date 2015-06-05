@@ -7,6 +7,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.media.Image;
 import android.os.DropBoxManager;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.ActionBar;
@@ -78,13 +79,12 @@ public class ConnectionActivity extends ActionBarActivity
     private ImageView imageViewStream;
     private boolean statusBarHidden;
 
-
-    private Button lockVelocities;
-
-    private Button buttonForward;
-    private Button buttonBackward;
-    private Button buttonLeft;
-    private Button buttonRight;
+    private ImageButton buttonForward;
+    private ImageButton buttonBackward;
+    private ImageButton buttonLeft;
+    private ImageButton buttonRight;
+    int linearVelocity;
+    int angularVelocity;
 
     private BaseLoaderCallback  mOpenCVCallBack = new BaseLoaderCallback(this) {
         @Override
@@ -181,6 +181,60 @@ public class ConnectionActivity extends ActionBarActivity
         if(!OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_9, this, mOpenCVCallBack)) {
 
         }
+        linearVelocity = 0;
+        angularVelocity = 0;
+        buttonForward = (ImageButton)findViewById(R.id.imageButtonUp);
+        buttonForward.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    linearVelocity = 100;
+                } else if (event.getAction() == MotionEvent.ACTION_UP) {
+                    linearVelocity = 0;
+                }
+                connection.sendMsg((byte)0x10, linearVelocity + "," + angularVelocity);
+                return true;
+            }
+        });
+        buttonBackward = (ImageButton)findViewById(R.id.imageButtonDown);
+        buttonBackward.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    linearVelocity = -100;
+                } else if (event.getAction() == MotionEvent.ACTION_UP) {
+                    linearVelocity = 0;
+                }
+                connection.sendMsg((byte)0x10, linearVelocity + "," + angularVelocity);
+                return true;
+            }
+        });
+        buttonLeft = (ImageButton)findViewById(R.id.imageButtonLeft);
+        buttonLeft.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    angularVelocity = 261;
+                } else if (event.getAction() == MotionEvent.ACTION_UP) {
+                    angularVelocity = 0;
+                }
+                connection.sendMsg((byte)0x10, linearVelocity + "," + angularVelocity);
+                return true;
+            }
+        });
+        buttonRight = (ImageButton)findViewById(R.id.imageButtonRight);
+        buttonRight.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    angularVelocity = -261;
+                } else if (event.getAction() == MotionEvent.ACTION_UP) {
+                    angularVelocity = 0;
+                }
+                connection.sendMsg((byte)0x10, linearVelocity + "," + angularVelocity);
+                return true;
+            }
+        });
     }
 
     @Override

@@ -36,6 +36,41 @@
         android:layout_alignParentRight="true"
         android:layout_alignParentEnd="true" />
 
+    <ImageButton
+        android:layout_width="60sp"
+        android:layout_height="60sp"
+        android:id="@+id/imageButtonLeft"
+        android:background="@drawable/grey_left_arrow"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true" />
+
+    <ImageButton
+        android:layout_width="60sp"
+        android:layout_height="60sp"
+        android:id="@+id/imageButtonRight"
+        android:background="@drawable/grey_right_arrow"
+        android:layout_alignParentBottom="true"
+        android:layout_toRightOf="@+id/imageButtonLeft"
+        android:layout_toEndOf="@+id/imageButtonLeft" />
+
+    <ImageButton
+        android:layout_width="60sp"
+        android:layout_height="60sp"
+        android:id="@+id/imageButtonDown"
+        android:background="@drawable/grey_down_arrow"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true" />
+
+    <ImageButton
+        android:layout_width="60sp"
+        android:layout_height="60sp"
+        android:id="@+id/imageButtonUp"
+        android:background="@drawable/grey_up_arrow"
+        android:layout_alignParentBottom="true"
+        android:layout_toLeftOf="@+id/imageButtonCamera"
+        android:layout_toStartOf="@+id/imageButtonCamera" />
 
 
 </RelativeLayout>
