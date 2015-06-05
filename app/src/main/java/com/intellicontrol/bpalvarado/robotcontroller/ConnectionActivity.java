@@ -23,6 +23,8 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.support.v4.widget.DrawerLayout;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -74,6 +76,7 @@ public class ConnectionActivity extends ActionBarActivity
 
     private ImageButton activateDeactivateCamera;
     private ImageView imageViewStream;
+    private boolean statusBarHidden;
 
 
     private Button lockVelocities;
@@ -133,6 +136,23 @@ public class ConnectionActivity extends ActionBarActivity
         sensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         sensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL);
         udpConnection = null;
+        statusBarHidden = false;
+        imageViewStream = (ImageView)findViewById(R.id.imageViewStream);
+        imageViewStream.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_UP){
+                    if(!statusBarHidden){
+                        statusBarHidden = true;
+                        getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+                    } else {
+                        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+                        statusBarHidden = false;
+                    }
+                }
+                return true;
+            }
+        });
 
         final ConnectionActivity self = this;
         activateDeactivateCamera = (ImageButton)findViewById(R.id.imageButtonCamera);
@@ -306,7 +326,6 @@ public class ConnectionActivity extends ActionBarActivity
         Mat dataDecoded = Highgui.imdecode(dataToMat, Highgui.CV_LOAD_IMAGE_COLOR);
         final Bitmap bitmapImage = Bitmap.createBitmap(dataDecoded.cols(), dataDecoded.rows(), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(dataDecoded, bitmapImage);
-        imageViewStream = (ImageView)findViewById(R.id.imageViewStream);
         imageViewStream.post(new Runnable() {
             @Override
             public void run() {
