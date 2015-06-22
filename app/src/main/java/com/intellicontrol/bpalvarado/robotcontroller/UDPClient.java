@@ -78,9 +78,9 @@ public class UDPClient extends AsyncTask<Void, Void, Void> implements UDPClientI
             if(receiveData() == 0) {
                 onUDPMessageReceived(bufferIn);
             }
-            try {
+            /*try {
                 Thread.sleep(100);
-            } catch (InterruptedException e) { }
+            } catch (InterruptedException e) { }*/
         }
         threadStatus = THREAD_STOPPED;
         return null;

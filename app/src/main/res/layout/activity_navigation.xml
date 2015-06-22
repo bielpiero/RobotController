@@ -32,9 +32,8 @@
         android:background="@drawable/camera"
         android:visibility="visible"
         android:onClick="buttonCamera_clicked"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentEnd="true" />
+        android:layout_alignTop="@+id/imageButtonUp"
+        android:layout_centerHorizontal="true" />
 
     <ImageButton
         android:layout_width="60sp"
@@ -68,9 +67,20 @@
         android:layout_height="60sp"
         android:id="@+id/imageButtonUp"
         android:background="@drawable/grey_up_arrow"
-        android:layout_alignParentBottom="true"
-        android:layout_toLeftOf="@+id/imageButtonCamera"
-        android:layout_toStartOf="@+id/imageButtonCamera" />
+        android:layout_alignTop="@+id/imageButtonDown"
+        android:layout_toLeftOf="@+id/imageButtonDown"
+        android:layout_toStartOf="@+id/imageButtonDown" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="Medium Text"
+        android:id="@+id/textPosition"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
+        android:textColor="@android:color/background_light" />
 
 
 </RelativeLayout>

@@ -50,9 +50,12 @@ import org.opencv.core.MatOfByte;
 import org.opencv.highgui.Highgui;
 
 import java.io.IOException;
+import java.sql.Time;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 
 public class ConnectionActivity extends ActionBarActivity
@@ -69,8 +72,11 @@ public class ConnectionActivity extends ActionBarActivity
     private CharSequence mTitle;
     private SocketNode connection;
     private UDPClient udpConnection;
+    private RobotPosition location;
     private ViewGroup currentFrame;
     private ArrayList<Gesture> gestures;
+
+    private Timer locationTimer;
 
     private SensorManager sensorManager;
     private Sensor sensor;
@@ -83,6 +89,8 @@ public class ConnectionActivity extends ActionBarActivity
     private ImageButton buttonBackward;
     private ImageButton buttonLeft;
     private ImageButton buttonRight;
+
+    private TextView positionText;
     int linearVelocity;
     int angularVelocity;
 
@@ -129,6 +137,22 @@ public class ConnectionActivity extends ActionBarActivity
             e.printStackTrace();
         }
         connection.sendMsg((byte)0x00, "");
+        location = new RobotPosition();
+        connection.sendMsg((byte)0xFF, Integer.toString(location.getPort()));
+        positionText = (TextView)findViewById(R.id.textPosition);
+        locationTimer = new Timer();
+        locationTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                positionText.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        positionText.setText("x: " + location.getX() + "\ny: " + location.getY() + "\nth: " + location.getThRad());
+                    }
+                });
+
+            }
+        }, 200, 200);
         currentFrame = (LinearLayout)findViewById(R.id.expressions_frame);
 
         gestures = new ArrayList<Gesture>();
@@ -344,29 +368,7 @@ public class ConnectionActivity extends ActionBarActivity
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        /*EditText linVelocity = (EditText)findViewById(R.id.editTextLinearVelocity);
-        EditText angVelocity = (EditText)findViewById(R.id.editTextAngularVelocity);
-        if(velocitiesLocked){
 
-            int linVel = 0;
-            int angVel = 0;
-            if(event.values[2]>(accelerometerZOffset + 2.5)) {
-                linVel = Integer.parseInt(linVelocity.getText().toString());
-            } else if(event.values[2] < (accelerometerZOffset - 2.5)){
-                linVel = -Integer.parseInt(linVelocity.getText().toString());
-            }
-
-            if(event.values[1]>1.5) {
-                angVel = Integer.parseInt(angVelocity.getText().toString());
-            } else if(event.values[1] < -1.5){
-                angVel = -Integer.parseInt(angVelocity.getText().toString());
-            }
-            connection.sendMsg((byte)0x10, Integer.toString(linVel) + "," + Integer.toString(angVel));
-        } else {
-            connection.sendMsg((byte)0x10, "0,0");
-        }
-        TextView accValues = (TextView)findViewById(R.id.textViewAccValues);
-        accValues.setText("X: " + event.values[0] + "\nY: " + event.values[1] + "\nZ: " + (event.values[2]));*/
     }
 
     @Override
