@@ -11,4 +11,13 @@
     <string name="navigation_drawer_close">Close navigation drawer</string>
 
     <string name="action_connect_to">Connect to</string>
+    <string name="action_set_position">Set Position</string>
+
+    <string name="x_coord">x (meters)</string>
+    <string name="y_coord">y (meters)</string>
+    <string name="th_coord">theta (rad)</string>
+
+    <string name="set">Set</string>
+    <string name="cancel">Cancel</string>
+
 </resources>

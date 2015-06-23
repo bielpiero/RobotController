@@ -3,5 +3,9 @@
     xmlns:tools="http://schemas.android.com/tools" tools:context=".ConnectionActivity">
 
     <item android:id="@+id/action_connect_to" android:title="@string/action_connect_to"
-        android:orderInCategory="100" app:showAsAction="never" />
+        android:orderInCategory="100" app:showAsAction="never" android:visibility="gone"/>
+
+    <item android:id="@+id/action_set_position" android:title="@string/action_set_position"
+        android:orderInCategory="101" app:showAsAction="never" android:visibility="gone"/>
+
 </menu>

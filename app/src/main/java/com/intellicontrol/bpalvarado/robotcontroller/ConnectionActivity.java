@@ -1,7 +1,10 @@
 package com.intellicontrol.bpalvarado.robotcontroller;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.Application;
+import android.app.Dialog;
+import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -48,6 +51,7 @@ import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
 import org.opencv.highgui.Highgui;
+import org.opencv.imgproc.Imgproc;
 
 import java.io.IOException;
 import java.sql.Time;
@@ -307,6 +311,21 @@ public class ConnectionActivity extends ActionBarActivity
             // if the drawer is not showing. Otherwise, let the drawer
             // decide what to show in the action bar.
             getMenuInflater().inflate(R.menu.connection, menu);
+            MenuItem connect = (MenuItem)menu.findItem(R.id.action_connect_to);
+            MenuItem setPose = (MenuItem)menu.findItem(R.id.action_set_position);
+            int frameId = currentFrame.getId();
+            if(frameId == R.id.expressions_frame){
+                connect.setVisible(true);
+                setPose.setVisible(false);
+            } else if(frameId == R.id.navigation_frame) {
+                connect.setVisible(false);
+                setPose.setVisible(true);
+            } else {
+                connect.setVisible(false);
+                setPose.setVisible(false);
+                return true;
+            }
+            this.invalidateOptionsMenu();
             restoreActionBar();
             return true;
         }
@@ -321,11 +340,47 @@ public class ConnectionActivity extends ActionBarActivity
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
+        if (id == R.id.action_connect_to) {
+            return true;
+        } else if(id == R.id.action_set_position){
+            showPositionDialog();
             return true;
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void showPositionDialog(){
+        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        final LayoutInflater inflater = getLayoutInflater();
+        final View inflator = inflater.inflate(R.layout.activity_position, null);
+        builder.setTitle(R.string.action_set_position);
+        builder.setView(inflator)
+                .setPositiveButton(R.string.set, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        EditText xCoordText = (EditText)inflator.findViewById(R.id.xCoordinate);
+                        EditText yCoordText = (EditText)inflator.findViewById(R.id.yCoordinate);
+                        EditText thCoordText = (EditText)inflator.findViewById(R.id.thCoordinate);
+
+                        double xCoord = Double.parseDouble(xCoordText.getText().toString());
+                        double yCoord = Double.parseDouble(yCoordText.getText().toString());
+                        double thCoord = Double.parseDouble(thCoordText.getText().toString());
+
+                        connection.sendMsg((byte)0x13, xCoord*1e3 + "," + yCoord*1e3 + "," + thCoord*1e3);
+                    }
+                })
+
+                .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.cancel();
+                    }
+                });
+
+        Dialog diag = builder.create();
+        diag.show();
+
     }
 
     @Override
@@ -380,11 +435,13 @@ public class ConnectionActivity extends ActionBarActivity
     public void onUDPMessageReceived(byte[] data) {
         MatOfByte dataToMat = new MatOfByte(data);
         Mat dataDecoded = Highgui.imdecode(dataToMat, Highgui.CV_LOAD_IMAGE_COLOR);
+        Imgproc.cvtColor(dataDecoded, dataDecoded, Imgproc.COLOR_BGR2RGB);
         final Bitmap bitmapImage = Bitmap.createBitmap(dataDecoded.cols(), dataDecoded.rows(), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(dataDecoded, bitmapImage);
         imageViewStream.post(new Runnable() {
             @Override
             public void run() {
+
                 imageViewStream.setImageBitmap(bitmapImage);
             }
         });
